@@ -26,15 +26,36 @@ app.get("/participants", async (req, res) => {
     }
 });
 
-app.post("/participants", (req, res) => {
+app.post("/participants", async (req, res) => {
     try {
-        const promise = db.collection("users").insertOne(req.body);
+        const promise = await db.collection("users").insertOne(req.body);
         res.sendStatus(201)
     } catch {
         console.log(error);
         res.sendStatus(422);
     }
 });
+
+app.post("/messages", async (req, res) => {
+    try {
+        const promise = await db.collection("messages").insertOne(req.body);
+        const { user } = req.headers;
+        res.sendStatus(201);
+    } catch {
+        console.log(error);
+        res.sendStatus(422);
+    }
+})
+
+app.get("/messages", async (req, res) => {
+    try {
+        const messages = await db.collection("messages").find({}).toArray();
+        res.send(messages);
+    } catch (error) {
+        console.log(error);
+        res.sendStatus(500);
+    }
+})
 
 app.listen(5000, () => {
     console.log("Servidor rodando.");
