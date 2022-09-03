@@ -3,6 +3,7 @@ import cors from "cors";
 import { MongoClient } from "mongodb";
 import dontenv from "dotenv";
 import joi from "joi";
+import dayjs from 'dayjs';
 
 dontenv.config();
 
@@ -10,7 +11,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const mongoClient = new MongoClient("mongodb://localhost:27017");
+const mongoClient = new MongoClient(process.env.MONGO_URI);
 let db;
 
 mongoClient.connect().then(() => {
@@ -47,7 +48,20 @@ app.post("/participants", async (req, res) => {
     }
 
     try {
-        const promise = await db.collection("users").insertOne(req.body);
+        const body = req.body;
+        const participants = {
+            name: body.name,
+            lastStatus: Date.now()
+        }
+        const message = {
+            from: body.name, 
+            to: 'Todos', 
+            text: 'entra na sala...', 
+            type: 'status', 
+            time: dayjs().format('HH:mm:ss')
+        } 
+        await db.collection("users").insertOne(participants);
+        await db.collection("messages").insertOne(message);
         res.sendStatus(201)
     } catch (error) {
         console.log(error);
@@ -65,10 +79,18 @@ app.post("/messages", async (req, res) => {
     }
 
     try {
-        const promise = await db.collection("messages").insertOne(req.body);
-        const { user } = req.headers;
+        const { user: from } = req.headers;
+        const body = req.body;
+        const message = {
+            from: from,
+            to: body.to, 
+            text: body.text, 
+            type: body.type, 
+            time: dayjs().format('HH:mm:ss')
+        } 
+        await db.collection("messages").insertOne(message);
         res.sendStatus(201);
-    } catch {
+    } catch (error) {
         console.log(error);
         res.sendStatus(422);
     }
