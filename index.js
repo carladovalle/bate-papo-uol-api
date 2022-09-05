@@ -40,10 +40,11 @@ app.get("/participants", async (req, res) => {
 
 app.post("/participants", async (req, res) => {
 
-    const validation = participantsSchema.validate(req.body, { abortEarly:  false });
+    const validation = participantsSchema.validate(req.body, { abortEarly: false });
 
     if (validation.error) {
-        res.sendStatus(422);
+        const e = validation.error.details.map(errors => errors.message);
+        res.status(422).send(e);
         return;
     }
 
@@ -74,7 +75,8 @@ app.post("/messages", async (req, res) => {
     const validation = messagesSchema.validate(req.body, { abortEarly: false });
 
     if (validation.error) {
-        res.sendStatus(422);
+        const e = validation.error.details.map(errors => errors.message);
+        res.status(422).send(e);
         return;
     }
 
@@ -106,6 +108,21 @@ app.get("/messages", async (req, res) => {
             from: from
         }).toArray();
         res.send(messages.slice(-limit));
+    } catch (error) {
+        console.log(error);
+        res.sendStatus(500);
+    }
+})
+
+app.post("/status", async (req, res) => {
+    const { user } = req.headers;
+    try {
+        const userr = await db.collection("users").findOne({name: user});
+        if (!userr) {
+            return res.send(404);
+        }
+        await db.collection("users").updateOne({name: user}, {$set: {lastStatus: Date.now()}});
+        res.sendStatus(200);
     } catch (error) {
         console.log(error);
         res.sendStatus(500);
