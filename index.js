@@ -28,7 +28,7 @@ const messagesSchema = joi.object({
     type: joi.string().valid("message").valid("private_message").required(),
 });
 
-/*setInterval(async () => {
+setInterval(async () => {
     try {
         const participants = await db.collection("users").find({}).toArray();
         const lastStatusNow = Date.now();
@@ -49,7 +49,7 @@ const messagesSchema = joi.object({
         res.sendStatus(500);
     }
 
-}, 15000); */
+}, 15000); 
 
 app.get("/participants", async (req, res) => {
     try {
