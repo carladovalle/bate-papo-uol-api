@@ -1,6 +1,6 @@
 import express from "express";
 import cors from "cors";
-import { MongoClient } from "mongodb";
+import { MongoClient, ObjectId } from "mongodb";
 import dontenv from "dotenv";
 import joi from "joi";
 import dayjs from 'dayjs';
@@ -153,6 +153,20 @@ app.post("/status", async (req, res) => {
         res.sendStatus(500);
     }
 });
+
+app.delete("/messages/:id", async (req, res) => {
+    const { id } = req.params;
+    try {
+        const m = await db.collection("messages").find({ _id: new ObjectId(id) }).toArray();
+        if (!m) {
+            return res.sendStatus(404);
+        }
+        await db.collection("messages").deleteOne({ _id: new ObjectId(id) });
+    } catch (error) {
+        console.log(error);
+        res.sendStatus(500);
+    }
+})
 
 app.listen(5000, () => {
     console.log("Servidor rodando.");
