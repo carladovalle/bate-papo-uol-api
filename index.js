@@ -26,7 +26,30 @@ const messagesSchema = joi.object({
     to: joi.string().required(),
     text: joi.string().required(),
     type: joi.string().valid("message").valid("private_message").required(),
-})
+});
+
+/*setInterval(async () => {
+    try {
+        const participants = await db.collection("users").find({}).toArray();
+        const lastStatusNow = Date.now();
+        for (const participant of participants) {
+            if (participant.lastStatus < lastStatusNow - 10000) {
+                await db.collection("users").deleteOne({lastStatus: participant.lastStatus});
+                await db.collection("messages").insertOne({
+                    from: participant.name,
+                    to: 'Todos', 
+                    text: 'sai da sala...', 
+                    type: 'status', 
+                    time: dayjs().format('HH:mm:ss')
+                });
+            }
+        }
+    } catch (error) {
+        console.log(error);
+        res.sendStatus(500);
+    }
+
+}, 15000); */
 
 app.get("/participants", async (req, res) => {
     try {
@@ -49,20 +72,22 @@ app.post("/participants", async (req, res) => {
     }
 
     try {
-        const body = req.body;
-        const participants = {
-            name: body.name,
-            lastStatus: Date.now()
+        const {name, lastStatus} = req.body;
+        const participant = await db.collection("users").findOne({name});
+        if (participant) {
+            return res.status(409).send("Usuário já existe.")
         }
-        const message = {
-            from: body.name, 
+        await db.collection("users").insertOne({
+            name,
+            lastStatus: Date.now()
+        });
+        await db.collection("messages").insertOne({
+            from: name, 
             to: 'Todos', 
             text: 'entra na sala...', 
             type: 'status', 
             time: dayjs().format('HH:mm:ss')
-        } 
-        await db.collection("users").insertOne(participants);
-        await db.collection("messages").insertOne(message);
+        });
         res.sendStatus(201)
     } catch (error) {
         console.log(error);
@@ -117,8 +142,8 @@ app.get("/messages", async (req, res) => {
 app.post("/status", async (req, res) => {
     const { user } = req.headers;
     try {
-        const userr = await db.collection("users").findOne({name: user});
-        if (!userr) {
+        const participant = await db.collection("users").findOne({name: user});
+        if (!participant) {
             return res.send(404);
         }
         await db.collection("users").updateOne({name: user}, {$set: {lastStatus: Date.now()}});
@@ -127,7 +152,7 @@ app.post("/status", async (req, res) => {
         console.log(error);
         res.sendStatus(500);
     }
-})
+});
 
 app.listen(5000, () => {
     console.log("Servidor rodando.");
