@@ -108,14 +108,13 @@ app.post("/messages", async (req, res) => {
     try {
         const { user: from } = req.headers;
         const body = req.body;
-        const message = {
+        await db.collection("messages").insertOne({
             from: from,
             to: body.to, 
             text: body.text, 
             type: body.type, 
             time: dayjs().format('HH:mm:ss')
-        } 
-        await db.collection("messages").insertOne(message);
+        } );
         res.sendStatus(201);
     } catch (error) {
         console.log(error);
@@ -165,6 +164,33 @@ app.delete("/messages/:id", async (req, res) => {
     } catch (error) {
         console.log(error);
         res.sendStatus(500);
+    }
+});
+
+app.put("/messages/:id", async (req, res) => {
+    const { id } = req.params;
+
+    const validation = messagesSchema.validate(req.body, { abortEarly: false });
+
+    if (validation.error) {
+        const e = validation.error.details.map(errors => errors.message);
+        res.status(422).send(e);
+        return;
+    }
+
+    try {
+        const { user: from } = req.headers;
+        const body = req.body;
+        const m = await db.collection("messages").find({ _id: new ObjectId(id) }).toArray();
+        if (!m) {
+            return res.sendStatus(404);
+        }
+        await db.collection("messages").updateOne({
+            _id: new ObjectId(id)
+        }, { $set: req.body } );
+    } catch (error) {
+        console.log(error);
+        res.sendStatus(422);
     }
 })
 
